@@ -18,14 +18,18 @@ pub async fn create_paste_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<CreatePasteSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let id: String = body.id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    let query_result = sqlx::query(r#"INSERT INTO pastes (id, title, content) VALUES (?, ?, ?)"#)
-        .bind(id)
-        .bind(body.title.to_string())
-        .bind(body.content.to_string())
-        .execute(&data.db)
-        .await
-        .map_err(|err: sqlx::Error| err.to_string());
+    let id: String = uuid::Uuid::new_v4().to_string();
+    let id_clone = id.clone();
+    let url = body.url.unwrap_or_else(|| id.clone());
+    let query_result =
+        sqlx::query(r#"INSERT INTO pastes (id, title, url, content) VALUES (?, ?, ?, ?)"#)
+            .bind(id)
+            .bind(body.title.to_string())
+            .bind(url.to_string())
+            .bind(body.content.to_string())
+            .execute(&data.db)
+            .await
+            .map_err(|err: sqlx::Error| err.to_string());
 
     if let Err(err) = query_result {
         if err.contains("Duplicate entry") {
@@ -43,7 +47,13 @@ pub async fn create_paste_handler(
     }
 
     let paste_response = serde_json::json!({
-            "status": "success",
+        "status": "success",
+        "data": {
+            "id": id_clone,
+            "url": url,
+            "title": body.title,
+            "content": body.content,
+        },
     });
 
     Ok(Json(paste_response))
@@ -53,7 +63,7 @@ pub async fn get_paste_handler(
     Path(id): Path<String>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let query_result = sqlx::query_as::<_, PasteModel>(r#"SELECT * FROM pastes WHERE id = ?"#)
+    let query_result = sqlx::query_as::<_, PasteModel>(r#"SELECT * FROM pastes WHERE url = ?"#)
         .bind(id)
         .fetch_one(&data.db)
         .await;
@@ -86,6 +96,7 @@ fn to_paste_response(paste: &PasteModel) -> PasteModelResponse {
     PasteModelResponse {
         id: paste.id.to_owned(),
         title: paste.title.to_owned(),
+        url: paste.url.to_owned(),
         content: paste.content.to_owned(),
         created_at: paste.created_at.unwrap(),
         updated_at: paste.updated_at.unwrap(),

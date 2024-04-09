@@ -7,7 +7,7 @@ pub struct ParamOptions {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreatePasteSchema {
-    pub id: Option<String>,
+    pub url: Option<String>,
     pub title: String,
     pub content: String,
 }

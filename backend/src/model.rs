@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct PasteModel {
     pub id: String,
     pub title: String,
+    pub url: Option<String>,
     pub content: String,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -15,6 +16,7 @@ pub struct PasteModel {
 pub struct PasteModelResponse {
     pub id: String,
     pub title: String,
+    pub url: Option<String>,
     pub content: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
